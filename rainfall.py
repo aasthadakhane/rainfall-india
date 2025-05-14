@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sb
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score, KFold, GridSearchCV
+import seaborn as sns
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.cluster import KMeans, DBSCAN
+
+st.set_page_config(layout="wide")
 
 st.title("Rainfall Analysis and Prediction in India")
 
@@ -26,15 +28,16 @@ def load_data():
 
 df = load_data()
 
+# EDA
 st.header("Exploratory Data Analysis")
-df['subdivision_encoded'] = df['subdivision'].astype('category').cat.codes
+
 yearly_avg = df.groupby('YEAR')['Avg_Jun_Sep'].mean()
 fig, ax = plt.subplots(figsize=(12,6))
-ax.plot(yearly_avg.index, yearly_avg.values)
+ax.plot(yearly_avg.index, yearly_avg.values, color='teal', marker='o', linestyle='-', linewidth=2)
 ax.set_title('Average Rainfall in India (JUN-SEP) by Year')
 ax.set_xlabel('Year')
 ax.set_ylabel('Avg Rainfall (mm)')
-ax.grid(True)
+ax.grid(True, linestyle='--', alpha=0.7)
 st.pyplot(fig)
 
 st.subheader("Rainfall per Subdivision and Year")
@@ -51,7 +54,7 @@ if not b.empty:
     for m, val in zip(months, rainfall_values):
         st.write(f"{m}: {val} mm")
     fig, ax = plt.subplots()
-    sb.barplot(x=months, y=rainfall_values, palette="Blues_d", ax=ax)
+    sns.barplot(x=months, y=rainfall_values, palette="Set2", ax=ax)
     ax.set_title(f'Rainfall in {sub} - {yr} (JUN–SEP)')
     ax.set_ylabel('Rainfall (mm)')
     ax.set_xlabel('Month')
@@ -59,13 +62,13 @@ if not b.empty:
 
 st.subheader("Distribution of Rainfall")
 fig, ax = plt.subplots(figsize=(16,8))
-sb.boxplot(data=df, x='subdivision', y='Avg_Jun_Sep', ax=ax)
+sns.boxplot(data=df, x='subdivision', y='Avg_Jun_Sep', palette="pastel", ax=ax)
 ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 ax.set_title('Distribution of Avg Rainfall by Subdivision')
 st.pyplot(fig)
 
 fig, ax = plt.subplots(figsize=(8,5))
-sb.histplot(df['Avg_Jun_Sep'], bins=30, kde=True, ax=ax)
+sns.histplot(df['Avg_Jun_Sep'], bins=30, kde=True, color='skyblue', ax=ax)
 ax.set_title('Histogram of Average Rainfall (JUN-SEP)')
 ax.set_xlabel('Avg Rainfall')
 st.pyplot(fig)
@@ -77,64 +80,31 @@ b = a[(a['YEAR'] >= start_year) & (a['YEAR'] <= end_year)]
 if not b.empty:
     b = b[['YEAR', 'JUN', 'JUL', 'AUG', 'SEP']].set_index('YEAR')
     fig, ax = plt.subplots(figsize=(8, 5))
-    sb.heatmap(b, annot=True, cmap='YlGnBu', fmt=".1f", cbar_kws={'label': 'Rainfall (mm)'}, ax=ax)
+    sns.heatmap(b, annot=True, cmap='coolwarm', fmt=".1f", cbar_kws={'label': 'Rainfall (mm)'}, ax=ax)
     ax.set_title(f"Rainfall Heatmap (JUN–SEP)\n{sub} [{start_year}–{end_year}]")
     st.pyplot(fig)
 
+# Machine Learning
 st.header("Rainfall Prediction")
-label = LabelEncoder()
-df['subdivision'] = label.fit_transform(df['subdivision'])
-
-x = df.drop(['YoY_Change', 'subdivision', 'YEAR'], axis=1).values
+x = df[['JUN', 'JUL', 'AUG', 'SEP', 'Avg_Jun_Sep', 'Lag1_Avg']].values
 y = df['YoY_Change'].values
-xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.2)
+xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.2, random_state=42)
 
 model = LinearRegression()
 model.fit(xtrain, ytrain)
 ypred = model.predict(xtest)
 
-r2 = r2_score(ytest, ypred)
-st.write(f"Linear Regression R2 Score: {r2*100:.2f}%")
-
-score = cross_val_score(LinearRegression(), x, y, cv=5, scoring='r2')
-st.write(f"Cross-validated R2 Score: {score.mean()*100:.2f}%")
-
-param_grid = {
-    'n_estimators': [100, 200],
-    'max_depth': [None, 10],
-    'min_samples_split': [2, 5],
-    'min_samples_leaf': [1, 2],
-    'max_features': ['sqrt'],
-    'bootstrap': [True]
-}
-
-grid_search = GridSearchCV(RandomForestRegressor(), param_grid, cv=5, scoring='r2')
-grid_search.fit(xtrain, ytrain)
-st.write(f"Best RandomForest Parameters: {grid_search.best_params_}")
-st.write(f"Best RandomForest R2 Score: {grid_search.best_score_ * 100:.2f}%")
-
-kfold = KFold(n_splits=20, shuffle=True, random_state=7)
-results = cross_val_score(AdaBoostRegressor(n_estimators=30, random_state=7), x, y, cv=kfold, scoring='r2')
-st.write(f"AdaBoost R2 Score: {round(results.mean(),2)*100:.2f}%")
-
-# Model Evaluation Metrics
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-
-# Manually compute RMSE for compatibility
-mse = mean_squared_error(ytest, ypred)
-rmse = mse ** 0.5
+rmse = mean_squared_error(ytest, ypred, squared=False)
 mae = mean_absolute_error(ytest, ypred)
 
-st.subheader("Model Evaluation Metrics")
-st.metric("RMSE", f"{rmse:.4f}")
-st.metric("MAE", f"{mae:.4f}")
+st.subheader("Model Evaluation")
+st.metric("RMSE", f"{rmse:.2f}")
+st.metric("MAE", f"{mae:.2f}")
 
-
-# Clustering Analysis
+# Clustering
 st.header("Clustering Analysis")
 X_cluster = df[['Avg_Jun_Sep', 'YoY_Change']]
 
-# Elbow Method for KMeans
 wss = []
 for i in range(1, 11):
     kmeans = KMeans(n_clusters=i, random_state=42)
@@ -142,57 +112,21 @@ for i in range(1, 11):
     wss.append(kmeans.inertia_)
 
 fig, ax = plt.subplots()
-ax.plot(range(1, 11), wss, marker='o')
+ax.plot(range(1, 11), wss, marker='o', linestyle='-', color='crimson')
 ax.set_title('Elbow Method')
-ax.set_xlabel('Number of Clusters')
+ax.set_xlabel('Number of clusters')
 ax.set_ylabel('WSS')
 st.pyplot(fig)
 
-# Apply KMeans with chosen number of clusters (e.g., 5)
 kmeans = KMeans(n_clusters=5, random_state=42)
 y_kmeans = kmeans.fit_predict(X_cluster)
-
-# Add cluster labels
-X_cluster_with_labels = X_cluster.copy()
-X_cluster_with_labels['Cluster'] = y_kmeans
+X_cluster['Cluster'] = y_kmeans
 centers = kmeans.cluster_centers_
 
-# Plot KMeans clusters
 fig, ax = plt.subplots()
-scatter = ax.scatter(
-    X_cluster_with_labels['Avg_Jun_Sep'], 
-    X_cluster_with_labels['YoY_Change'], 
-    c=X_cluster_with_labels['Cluster'], 
-    cmap='viridis', 
-    alpha=0.7
-)
-ax.scatter(
-    centers[:, 0], centers[:, 1], 
-    c='red', s=300, marker='X', label='Centroids'
-)
+scatter = ax.scatter(X_cluster['Avg_Jun_Sep'], X_cluster['YoY_Change'], c=X_cluster['Cluster'], cmap='tab10', alpha=0.7)
+ax.scatter(centers[:, 0], centers[:, 1], c='black', s=300, marker='X', label='Centroids')
 ax.set_title('KMeans Clustering')
-ax.set_xlabel('Avg Rainfall (Jun-Sep)')
-ax.set_ylabel('YoY Change')
-ax.legend()
-st.pyplot(fig)
-
-# DBSCAN Clustering
-dbscan = DBSCAN(eps=1.0, min_samples=5)
-y_dbscan = dbscan.fit_predict(X_cluster)
-
-fig, ax = plt.subplots()
-scatter = ax.scatter(
-    X_cluster['Avg_Jun_Sep'], 
-    X_cluster['YoY_Change'], 
-    c=y_dbscan, cmap='plasma', alpha=0.6
-)
-# Mark noise points
-ax.scatter(
-    X_cluster['Avg_Jun_Sep'][y_dbscan == -1], 
-    X_cluster['YoY_Change'][y_dbscan == -1],
-    c='red', s=100, label='Noise', marker='x'
-)
-ax.set_title('DBSCAN Clustering')
 ax.set_xlabel('Avg Rainfall (Jun-Sep)')
 ax.set_ylabel('YoY Change')
 ax.legend()
@@ -200,18 +134,25 @@ st.pyplot(fig)
 
 # DBSCAN
 st.subheader("DBSCAN Clustering")
-dbscan = DBSCAN(eps=5, min_samples=5)
-y_dbscan = dbscan.fit_predict(X_cluster)
+dbscan = DBSCAN(eps=1.0, min_samples=5)
+y_dbscan = dbscan.fit_predict(X_cluster[['Avg_Jun_Sep', 'YoY_Change']])
+
 fig, ax = plt.subplots()
-ax.scatter(X_cluster['Avg_Jun_Sep'], X_cluster['YoY_Change'], c=y_dbscan, cmap='viridis', alpha=0.7)
+colors = sns.color_palette("husl", len(set(y_dbscan)))
+for i, cluster in enumerate(set(y_dbscan)):
+    mask = (y_dbscan == cluster)
+    ax.scatter(X_cluster['Avg_Jun_Sep'][mask], X_cluster['YoY_Change'][mask], 
+               label=f"Cluster {cluster}" if cluster != -1 else "Noise",
+               s=50, alpha=0.7, color=colors[i])
 ax.set_title('DBSCAN Clustering')
-ax.set_xlabel('Avg Rainfall (Jun-Sep)')
-ax.set_ylabel('YoY Change')
+ax.set_xlabel('Average Rainfall (Jun-Sep)')
+ax.set_ylabel('Year-over-Year Change')
+ax.legend()
 st.pyplot(fig)
 
-# Trend
+# Trend Plot
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(df['YEAR'], df['Avg_Jun_Sep'], label='Avg Rainfall (Jun-Sep)', color='b', marker='o')
+ax.plot(df['YEAR'], df['Avg_Jun_Sep'], label='Avg Rainfall (Jun-Sep)', color='navy', marker='o')
 ax.set_title('Trend of Average Rainfall (Jun-Sep) Over Years')
 ax.set_xlabel('Year')
 ax.set_ylabel('Avg Rainfall (mm)')
