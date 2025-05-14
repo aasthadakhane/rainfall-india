@@ -13,12 +13,18 @@ from sklearn.cluster import KMeans, DBSCAN
 st.title("Rainfall Analysis and Prediction in India")
 
 # Load Data
-df = pd.read_csv("rainfaLLIndia.csv")
-df['Avg_Jun_Sep'] = df[['JUN', 'JUL', 'AUG', 'SEP']].mean(axis=1)
-df.sort_values(by=['subdivision', 'YEAR'], inplace=True)
-df['YoY_Change'] = df.groupby('subdivision')['Avg_Jun_Sep'].diff()
-df['Lag1_Avg'] = df.groupby('subdivision')['Avg_Jun_Sep'].shift(1)
-df.drop_duplicates(inplace=True)
+@st.cache_data
+def load_data():
+    df = pd.read_csv("../DataSets/rainfaLLIndia.csv")
+    df['Avg_Jun_Sep'] = df[['JUN', 'JUL', 'AUG', 'SEP']].mean(axis=1)
+    df.sort_values(by=['subdivision', 'YEAR'], inplace=True)
+    df['YoY_Change'] = df.groupby('subdivision')['Avg_Jun_Sep'].diff()
+    df['Lag1_Avg'] = df.groupby('subdivision')['Avg_Jun_Sep'].shift(1)
+    df.drop_duplicates(inplace=True)
+    df.fillna(0, inplace=True)
+    return df
+
+df = load_data()
 
 # EDA
 st.header("Exploratory Data Analysis")
@@ -33,11 +39,9 @@ ax.grid(True)
 st.pyplot(fig)
 
 st.subheader("Rainfall per Subdivision and Year")
-st.write(df['subdivision'].unique())
 sub = st.selectbox("Select a subdivision:", df['subdivision'].unique())
 a = df[df['subdivision'] == sub]
 
-st.write(sorted(a['YEAR'].unique()))
 yr = st.selectbox("Select a year:", sorted(a['YEAR'].unique()))
 b = a[a['YEAR'] == yr]
 
@@ -80,7 +84,6 @@ if not b.empty:
 
 # Machine Learning
 st.header("Rainfall Prediction")
-df.fillna(0, inplace=True)
 label = LabelEncoder()
 df['subdivision'] = label.fit_transform(df['subdivision'])
 
