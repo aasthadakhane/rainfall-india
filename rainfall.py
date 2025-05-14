@@ -123,10 +123,18 @@ model_adb = AdaBoostRegressor(n_estimators=30, random_state=7)
 results = cross_val_score(model_adb, x, y, cv=kfold, scoring='r2')
 st.write(f"AdaBoost R2 Score: {round(results.mean(),2)*100:.2f}%")
 
-rmse = mean_squared_error(ytest, ypred, squared=False)
-mae = mean_absolute_error(ytest, ypred)
-st.write(f"RMSE: {rmse:.4f}")
-st.write(f"MAE: {mae:.4f}")
+try:
+    if len(ytest) != len(ypred):
+        st.error("Prediction and test set length mismatch.")
+    else:
+        rmse = mean_squared_error(ytest, ypred, squared=False)
+        mae = mean_absolute_error(ytest, ypred)
+        st.subheader("📊 Model Evaluation Metrics")
+        st.metric("RMSE", f"{rmse:.4f}")
+        st.metric("MAE", f"{mae:.4f}")
+except Exception as e:
+    st.error(f"Error computing metrics: {e}")
+
 
 # Clustering
 st.header("Clustering Analysis")
