@@ -13,7 +13,7 @@ from sklearn.cluster import KMeans, DBSCAN
 st.title("Rainfall Analysis and Prediction in India")
 
 # Load Data
-df = pd.read_csv("../DataSets/rainfaLLIndia.csv")
+df = pd.read_csv("rainfaLLIndia.csv")
 df['Avg_Jun_Sep'] = df[['JUN', 'JUL', 'AUG', 'SEP']].mean(axis=1)
 df.sort_values(by=['subdivision', 'YEAR'], inplace=True)
 df['YoY_Change'] = df.groupby('subdivision')['Avg_Jun_Sep'].diff()
