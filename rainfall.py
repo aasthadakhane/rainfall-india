@@ -144,18 +144,36 @@ ax.set_xlabel('Number of clusters')
 ax.set_ylabel('WSS')
 st.pyplot(fig)
 
+# KMeans Clustering Plot (Fixed)
 kmeans = KMeans(n_clusters=5, random_state=42)
 y_kmeans = kmeans.fit_predict(X_cluster)
-df['Cluster'] = y_kmeans
-fig, ax = plt.subplots()
-ax.scatter(X_cluster['Avg_Jun_Sep'], X_cluster['YoY_Change'], c=y_kmeans, cmap='viridis')
+
+# Assign cluster labels for plotting
+X_cluster_with_labels = X_cluster.copy()
+X_cluster_with_labels['Cluster'] = y_kmeans
+
+# Extract centroids
 centers = kmeans.cluster_centers_
-ax.scatter(centers[:,0], centers[:,1], c='red', s=300, marker='X', label='Centroids')
+
+# Plot
+fig, ax = plt.subplots()
+scatter = ax.scatter(
+    X_cluster_with_labels['Avg_Jun_Sep'], 
+    X_cluster_with_labels['YoY_Change'], 
+    c=X_cluster_with_labels['Cluster'], 
+    cmap='viridis', 
+    alpha=0.7
+)
+ax.scatter(
+    centers[:, 0], centers[:, 1], 
+    c='red', s=300, marker='X', label='Centroids'
+)
 ax.set_title('KMeans Clustering')
 ax.set_xlabel('Avg Rainfall (Jun-Sep)')
 ax.set_ylabel('YoY Change')
 ax.legend()
 st.pyplot(fig)
+
 
 # DBSCAN
 dbscan = DBSCAN(eps=1.0, min_samples=5)
