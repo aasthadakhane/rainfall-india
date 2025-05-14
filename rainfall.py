@@ -133,23 +133,6 @@ adb_results = cross_val_score(adb_model, X, y, cv=kfold, scoring='r2')
 st.write(f"AdaBoost R² Score: {adb_results.mean() * 100:.2f}%")
 
 
-# Ensure predictions and test labels are of the same shape
-rf_pred = rf_model.predict(xtest)
-
-# Ensure ytest and rf_pred are numpy arrays and flatten them if needed
-ytest = np.array(ytest).flatten()
-rf_pred = np.array(rf_pred).flatten()
-
-# Calculate RMSE
-rmse = mean_squared_error(ytest, rf_pred, squared=False)
-mae = mean_absolute_error(ytest, rf_pred)
-
-# Display the metrics
-st.subheader("Model Evaluation Metrics")
-st.metric("RMSE", f"{rmse:.4f}")
-st.metric("MAE", f"{mae:.4f}")
-
-
 # Clustering
 st.header("Clustering Analysis")
 
