@@ -15,7 +15,6 @@ st.set_page_config(layout="wide")
 st.title("Rainfall Analysis and Prediction in India")
 
 @st.cache_data
-
 def load_data():
     df = pd.read_csv("rainfaLLIndia.csv")
     df['Avg_Jun_Sep'] = df[['JUN', 'JUL', 'AUG', 'SEP']].mean(axis=1)
@@ -54,7 +53,7 @@ if not b.empty:
     for m, val in zip(months, rainfall_values):
         st.write(f"{m}: {val} mm")
     fig, ax = plt.subplots()
-    sns.barplot(x=months, y=rainfall_values, palette="Set2", ax=ax)
+    sns.barplot(x=months, y=rainfall_values, palette="Set3", ax=ax)
     ax.set_title(f'Rainfall in {sub} - {yr} (JUN–SEP)')
     ax.set_ylabel('Rainfall (mm)')
     ax.set_xlabel('Month')
@@ -62,13 +61,13 @@ if not b.empty:
 
 st.subheader("Distribution of Rainfall")
 fig, ax = plt.subplots(figsize=(16,8))
-sns.boxplot(data=df, x='subdivision', y='Avg_Jun_Sep', palette="pastel", ax=ax)
+sns.boxplot(data=df, x='subdivision', y='Avg_Jun_Sep', palette="Spectral", ax=ax)
 ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 ax.set_title('Distribution of Avg Rainfall by Subdivision')
 st.pyplot(fig)
 
 fig, ax = plt.subplots(figsize=(8,5))
-sns.histplot(df['Avg_Jun_Sep'], bins=30, kde=True, color='skyblue', ax=ax)
+sns.histplot(df['Avg_Jun_Sep'], bins=30, kde=True, color='orchid', ax=ax)
 ax.set_title('Histogram of Average Rainfall (JUN-SEP)')
 ax.set_xlabel('Avg Rainfall')
 st.pyplot(fig)
@@ -80,7 +79,7 @@ b = a[(a['YEAR'] >= start_year) & (a['YEAR'] <= end_year)]
 if not b.empty:
     b = b[['YEAR', 'JUN', 'JUL', 'AUG', 'SEP']].set_index('YEAR')
     fig, ax = plt.subplots(figsize=(8, 5))
-    sns.heatmap(b, annot=True, cmap='coolwarm', fmt=".1f", cbar_kws={'label': 'Rainfall (mm)'}, ax=ax)
+    sns.heatmap(b, annot=True, cmap='YlGnBu', fmt=".1f", cbar_kws={'label': 'Rainfall (mm)'}, ax=ax)
     ax.set_title(f"Rainfall Heatmap (JUN–SEP)\n{sub} [{start_year}–{end_year}]")
     st.pyplot(fig)
 
@@ -112,7 +111,7 @@ for i in range(1, 11):
     wss.append(kmeans.inertia_)
 
 fig, ax = plt.subplots()
-ax.plot(range(1, 11), wss, marker='o', linestyle='-', color='crimson')
+ax.plot(range(1, 11), wss, marker='o', linestyle='-', color='coral')
 ax.set_title('Elbow Method')
 ax.set_xlabel('Number of clusters')
 ax.set_ylabel('WSS')
@@ -124,7 +123,7 @@ X_cluster['Cluster'] = y_kmeans
 centers = kmeans.cluster_centers_
 
 fig, ax = plt.subplots()
-scatter = ax.scatter(X_cluster['Avg_Jun_Sep'], X_cluster['YoY_Change'], c=X_cluster['Cluster'], cmap='tab10', alpha=0.7)
+scatter = ax.scatter(X_cluster['Avg_Jun_Sep'], X_cluster['YoY_Change'], c=X_cluster['Cluster'], cmap='rainbow', alpha=0.7)
 ax.scatter(centers[:, 0], centers[:, 1], c='black', s=300, marker='X', label='Centroids')
 ax.set_title('KMeans Clustering')
 ax.set_xlabel('Avg Rainfall (Jun-Sep)')
@@ -138,7 +137,7 @@ dbscan = DBSCAN(eps=1.0, min_samples=5)
 y_dbscan = dbscan.fit_predict(X_cluster[['Avg_Jun_Sep', 'YoY_Change']])
 
 fig, ax = plt.subplots()
-colors = sns.color_palette("husl", len(set(y_dbscan)))
+colors = sns.color_palette("Set1", len(set(y_dbscan)))
 for i, cluster in enumerate(set(y_dbscan)):
     mask = (y_dbscan == cluster)
     ax.scatter(X_cluster['Avg_Jun_Sep'][mask], X_cluster['YoY_Change'][mask], 
@@ -152,7 +151,7 @@ st.pyplot(fig)
 
 # Trend Plot
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(df['YEAR'], df['Avg_Jun_Sep'], label='Avg Rainfall (Jun-Sep)', color='navy', marker='o')
+ax.plot(df['YEAR'], df['Avg_Jun_Sep'], label='Avg Rainfall (Jun-Sep)', color='darkorange', marker='o')
 ax.set_title('Trend of Average Rainfall (Jun-Sep) Over Years')
 ax.set_xlabel('Year')
 ax.set_ylabel('Avg Rainfall (mm)')
