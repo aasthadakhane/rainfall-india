@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sb
-df = pd.read_csv("../DataSets/rainfaLLIndia.csv")
+df = pd.read_csv("rainfaLLIndia.csv")
 df['Avg_Jun_Sep'] = df[['JUN', 'JUL', 'AUG', 'SEP']].mean(axis=1)
 
 df.sort_values(by=['subdivision', 'YEAR'], inplace=True)
