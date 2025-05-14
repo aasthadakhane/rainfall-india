@@ -14,7 +14,7 @@ df_pivot = df.pivot(index='YEAR', columns='subdivision', values='Avg_Jun_Sep')
 df_pivot
 df.dtypes
 df.drop_duplicates(inplace=True)
-Phase 2: Exploratory Data Analysis (EDA)
+
 df['subdivision_encoded'] = df['subdivision'].astype('category').cat.codes
 yearly_avg = df.groupby('YEAR')['Avg_Jun_Sep'].mean()
 plt.figure(figsize=(12,6))
