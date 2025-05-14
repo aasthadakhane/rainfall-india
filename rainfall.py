@@ -117,12 +117,18 @@ kfold = KFold(n_splits=20, shuffle=True, random_state=7)
 results = cross_val_score(AdaBoostRegressor(n_estimators=30, random_state=7), x, y, cv=kfold, scoring='r2')
 st.write(f"AdaBoost R2 Score: {round(results.mean(),2)*100:.2f}%")
 
-rmse = mean_squared_error(ytest, ypred, squared=False)
+# Model Evaluation Metrics
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+# Manually compute RMSE for compatibility
+mse = mean_squared_error(ytest, ypred)
+rmse = mse ** 0.5
 mae = mean_absolute_error(ytest, ypred)
 
 st.subheader("Model Evaluation Metrics")
 st.metric("RMSE", f"{rmse:.4f}")
 st.metric("MAE", f"{mae:.4f}")
+
 
 st.header("Clustering Analysis")
 X_cluster = df[['Avg_Jun_Sep', 'YoY_Change']]
