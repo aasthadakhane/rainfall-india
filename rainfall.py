@@ -168,6 +168,34 @@ ax.set_ylabel('YoY Change')
 ax.legend()
 st.pyplot(fig)
 
-# DBSCAN
-dbscan = DBSCAN(eps=1.0, min_samples=5)
-y_dbscan =_
+# DBSCAN Clustering
+from sklearn.cluster import DBSCAN
+
+# Clustering
+st.header("DBSCAN Clustering")
+
+# Prepare the data for clustering
+# We'll use the same features (X) used for prediction.
+# In case you want to apply clustering on different features, you can modify this.
+X_cluster = df_ml.drop(['YoY_Change', 'subdivision', 'YEAR'], axis=1)
+
+# Apply DBSCAN
+dbscan = DBSCAN(eps=0.5, min_samples=5)
+df_ml['cluster'] = dbscan.fit_predict(X_cluster)
+
+# Display the clusters
+st.subheader("Clusters Assigned by DBSCAN")
+
+# Visualize the clusters
+fig, ax = plt.subplots(figsize=(10, 6))
+scatter = ax.scatter(df_ml['JUN'], df_ml['JUL'], c=df_ml['cluster'], cmap='viridis')
+ax.set_title("DBSCAN Clustering (JUN vs JUL)")
+ax.set_xlabel("June Rainfall (mm)")
+ax.set_ylabel("July Rainfall (mm)")
+
+# Add color bar
+cbar = plt.colorbar(scatter, ax=ax)
+cbar.set_label("Cluster ID")
+
+# Show the plot
+st.pyplot(fig)
