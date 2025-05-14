@@ -130,28 +130,34 @@ st.metric("RMSE", f"{rmse:.4f}")
 st.metric("MAE", f"{mae:.4f}")
 
 
+# Clustering Analysis
 st.header("Clustering Analysis")
 X_cluster = df[['Avg_Jun_Sep', 'YoY_Change']]
 
+# Elbow Method for KMeans
 wss = []
 for i in range(1, 11):
     kmeans = KMeans(n_clusters=i, random_state=42)
     kmeans.fit(X_cluster)
     wss.append(kmeans.inertia_)
+
 fig, ax = plt.subplots()
 ax.plot(range(1, 11), wss, marker='o')
 ax.set_title('Elbow Method')
-ax.set_xlabel('Number of clusters')
+ax.set_xlabel('Number of Clusters')
 ax.set_ylabel('WSS')
 st.pyplot(fig)
 
+# Apply KMeans with chosen number of clusters (e.g., 5)
 kmeans = KMeans(n_clusters=5, random_state=42)
 y_kmeans = kmeans.fit_predict(X_cluster)
 
+# Add cluster labels
 X_cluster_with_labels = X_cluster.copy()
 X_cluster_with_labels['Cluster'] = y_kmeans
 centers = kmeans.cluster_centers_
 
+# Plot KMeans clusters
 fig, ax = plt.subplots()
 scatter = ax.scatter(
     X_cluster_with_labels['Avg_Jun_Sep'], 
@@ -165,6 +171,28 @@ ax.scatter(
     c='red', s=300, marker='X', label='Centroids'
 )
 ax.set_title('KMeans Clustering')
+ax.set_xlabel('Avg Rainfall (Jun-Sep)')
+ax.set_ylabel('YoY Change')
+ax.legend()
+st.pyplot(fig)
+
+# DBSCAN Clustering
+dbscan = DBSCAN(eps=1.0, min_samples=5)
+y_dbscan = dbscan.fit_predict(X_cluster)
+
+fig, ax = plt.subplots()
+scatter = ax.scatter(
+    X_cluster['Avg_Jun_Sep'], 
+    X_cluster['YoY_Change'], 
+    c=y_dbscan, cmap='plasma', alpha=0.6
+)
+# Mark noise points
+ax.scatter(
+    X_cluster['Avg_Jun_Sep'][y_dbscan == -1], 
+    X_cluster['YoY_Change'][y_dbscan == -1],
+    c='red', s=100, label='Noise', marker='x'
+)
+ax.set_title('DBSCAN Clustering')
 ax.set_xlabel('Avg Rainfall (Jun-Sep)')
 ax.set_ylabel('YoY Change')
 ax.legend()
